@@ -1,0 +1,36 @@
+---
+title: "MPLProject"
+author: "Pawel Borowiec"
+date: "Wednesday, October 22, 2014"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+# Read all training set
+training <- read.csv(file="C:/Users/Pawel/Downloads/pml-training.csv", header=TRUE, sep=",")
+# Select rows with new_window=="yes"
+trainingYES <- training #[(training$new_window=="yes"),]
+# remove all columns with NA or "#DIV/0!"
+trainingYESwithoutNA <- trainingYES[ , apply(trainingYES, 2, function(x) !any(x=="" || x=="#DIV/0!" || is.na(x)))]
+# remove unnecessary columns
+train <- trainingYESwithoutNA[-(0:7)]
+
+# Read all test set
+testing <- read.csv(file="C:/Users/Pawel/Downloads/pml-testing.csv", header=TRUE, sep=",")
+# remove all columns with NA or "#DIV/0!"
+testingYESwithoutNA <- testing[ , apply(testing, 2, function(x) !any(x=="" || x=="#DIV/0!" || is.na(x)))]
+# remove unnecessary columns
+test <- testingYESwithoutNA[-(0:7)]
+```
+
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+plot(cars)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

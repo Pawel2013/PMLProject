@@ -24,6 +24,9 @@ There is a column "new window" with "yes" or "no" values. For "yes" value in row
 As a result we have set of 52 features in both cleaned sets, plus "classe"" feature as outcome in training set.
 
 ```{r}
+library(caret)
+set.seed(1234)
+
 # Read all training set
 training <- read.csv(file="C:/Users/Pawel/Downloads/pml-training.csv", header=TRUE, sep=",")
 # Select rows with new_window=="yes"
@@ -39,9 +42,43 @@ testing <- read.csv(file="C:/Users/Pawel/Downloads/pml-testing.csv", header=TRUE
 testingYESwithoutNA <- testing[ , apply(testing, 2, function(x) !any(x=="" || x=="#DIV/0!" || is.na(x)))]
 # remove unnecessary columns
 test <- testingYESwithoutNA[-(0:7)]
+
+# Find columns names for both tests
+colnamesTrain <- colnames(train)
+colnamesTest <- colnames(test)
+# find the matching names
+commonNames <- matchingNames <- names(train)[names(train) %in% names(test)]
+# select only common names in training set
+trainNew <- train[,(colnamesTrain %in% commonNames)]
+# select only common names in test set
+testNew <- test[,(colnamesTest %in% commonNames)]
+
+# add column "classe
+trainNew["classe"] <- NA
+trainNew$classe <- train$classe
+# set the name of last column
+#colnames(trainNew)[dim(trainNew)[2]] <- "classe"
+
+# For Cross Validation
+set.seed(1234)
+inTrain <- createDataPartition(y = trainNew$classe, p = 0.8, list = F)
+trainingCV <- trainNew[inTrain,]
+# validation test
+validatingCV <- trainNew[-inTrain,]
+
 ```
 
 Are these features correlated. To find it we can use....
+
+```{r}
+# Features selection & dimension reduction
+#install.packages("FSelector")
+library("FSelector")
+result <- cfs(classe ~ ., trainingCV)
+#result <- cfs(classe ~ ., trainNew)
+f <- as.simple.formula(result, "classe")
+print(f)
+```
 
 ####Algorithm
 
@@ -59,6 +96,4 @@ Support Vector Machines
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-
 

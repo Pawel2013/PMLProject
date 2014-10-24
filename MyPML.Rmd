@@ -1,9 +1,42 @@
 ---
-title: "MPLProject"
+title: "PML - Practical Machine Learning Project from Coursera"
 author: "Pawel Borowiec"
 date: "Wednesday, October 22, 2014"
 output: html_document
 ---
+
+####Question:
+
+The goal of this project is to build the predictor, which can answer the question:
+What is the manner in which 6  participants are doing a particular activity ?.
+The data this project uses are from accelerometers on the belt, forearm, arm, and dumbell.Participants performed  barbell lifts correctly and incorrectly in 5 different ways.The full description of the "Human Activity Recognition" experiment is given here: http://groupware.les.inf.puc-rio.br/har
+
+####Input Data:
+
+The training data comes from this source: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv.
+
+The test data comes from this source: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv.
+
+####Features
+
+After downloading and reading the training and test set I noticed, that there are 160 variables in both sets.
+There is a column "new window" with "yes" or "no" values. For "yes" value in row -  statistical properties of some feature are given, but as we can see, the values are missed up. If I understand we don't need to mimmic original method applyied in author's paper - using rooling window, to calculate this statistical features (skewness, kurtosis, variance, etc.). Instead we must clean the data, because of lot of "NA" and "#DIV/0!" values and use almost the rest of columns. I suggest to remove first 8 columns.
+As a result we have set of 52 features in both cleaned sets, plus "classe"" feature as outcome in training set.
+
+Are these features correlated. To find it we can use....
+
+####Algorithm
+
+I decided to use following 3 algorithms for comparison:
+Random Forest
+Generalized Boosted Regression Models
+and
+Support Vector Machines
+
+####Parameter
+
+
+####Evaluation
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
@@ -27,10 +60,3 @@ testingYESwithoutNA <- testing[ , apply(testing, 2, function(x) !any(x=="" || x=
 test <- testingYESwithoutNA[-(0:7)]
 ```
 
-You can also embed plots, for example:
-
-```{r, echo=FALSE}
-plot(cars)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

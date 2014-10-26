@@ -17,10 +17,10 @@ The training data comes from this source: https://d396qusza40orc.cloudfront.net/
 
 The test data comes from this source: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv.
 
-####Features
+####Cleaning
 
 After downloading and reading the training and test set I noticed, that there are 160 variables in both sets.
-There is a column "new window" with "yes" or "no" values. For "yes" value in row -  statistical properties of some feature are given, but as we can see, the values are missed up. If I understand we don't need to mimmic original method applyied in author's paper - using rooling window, to calculate this statistical features (skewness, kurtosis, variance, etc.). Instead we must clean the data, because of lot of "NA" and "#DIV/0!" values and use almost the rest of columns. I suggest to remove first 8 columns.
+There is a column "new window" with "yes" or "no" values. For "yes" value in row -  statistical properties of some features are given, but as we can see, the values are missed up. If I understand we don't need to mimic original method applied in author's paper - using rooling window, to calculate statistical features (skewness, kurtosis, variance, etc.). Instead we must clean the data, because of lot of "NA" , "#DIV/0!" and empty values and use almost the rest of columns. I suggest to remove first 8 columns, which don't belong to predictive variables.
 As a result we have set of 52 features in both cleaned sets, plus "classe"" feature as outcome in training set.
 
 ```{r}
@@ -60,7 +60,13 @@ trainingNew$classe <- trainingDS$classe
 
 ```
 
-I devided cleaned training set into 2 parts as follows:
+Removed columns are:
+
+```{r}
+  colnames(testingDSwithoutNA[(1:7)])
+```
+
+I divided cleared  training set into 2 parts as follows:
 It was done for estimation of out-of-sample error for each model.
 
 ```{r}
@@ -72,7 +78,10 @@ trainingCV <- trainingNew[inTrain,]
 validatingCV <- trainingNew[-inTrain,]
 ```
 
-Are these features correlated. To find it we can use....
+####Features
+
+Do we need all set of features ?
+Are these features correlated ?. To find it out we can use FSelector package.
 
 ```{r}
 # Features selection & dimension reduction
@@ -93,7 +102,7 @@ I decided to use following 3 algorithms for comparison:
 
 ####Parameters of the model
 
-For parameter estimation I used train function from caret package with:
+For parameter estimation I used "train"" function from caret package with:
 10-fold cross validation and other default values.
 
 ```{r}
@@ -116,7 +125,7 @@ modelTrain <- function (m, f){
  
 ####Evaluation
 
-All 3 models were tunned and evaluated using following code.Method (m value) was choosen to process current model ("svm", "gbm" and "rf")
+All 3 models were tuned in and evaluated using following code. Method (m value) was choosen to process current model ("svm", "gbm" and "rf"). 
 
 ##### Generalized Boosted Regression Models
 
@@ -268,7 +277,7 @@ for RF
 rfPredictFinalTest
 ```
 
-Model built with random forests is very accurate. In-sample accuraccy is equal 1.0, so we could expect overfitting, but accuracy for Ou-of-sample case is equal "only" 98,49% 
+Model built with random forests is very accurate and it was eventually selected as predicting algorithm. In-sample accuracy is equal 1.0, so we could expect overfitting, but accuracy for Out-of-sample case is equal "only" 98,49% 
 
 Applying RF model with the code:
 
@@ -286,5 +295,5 @@ answers <- as.character(rfPredictFinalTest)
 pml_write_files(answers)
 ```
 
-we write each predicted case to seperate file, with "problem_id*" prefix.
-Also worth mentioning is that in case as using all 52 selected features instead of given by csf package usage, we can expect even better accuracy.
+we write down each predicted case to seperate file, with "problem_id*" prefix.
+Also worth mentioning is that in case of using all 52 selected features instead of given by cfs package usage, we can expect even better accuracy.

@@ -268,7 +268,7 @@ for RF
 rfPredictFinalTest
 ```
 
-Model built with random forests is very accurate. In-sample accuraccy is equal 1.0, so we could expect overfitting, but accuracy for Ou-of-sample case is equal "only" 0.9849. 
+Model built with random forests is very accurate. In-sample accuraccy is equal 1.0, so we could expect overfitting, but accuracy for Ou-of-sample case is equal "only" 98,49% 
 
 Applying RF model with the code:
 
@@ -283,3 +283,6 @@ pml_write_files = function(x){
 
 pml_write_files(rfPredictFinalTest)
 ```
+
+we write each predicted case to seperate file, with "problem_id*" prefix.
+Also worth mentioning is that in case as using all 52 selected features instead of given by csf package usage, we can expect even better accuracy.

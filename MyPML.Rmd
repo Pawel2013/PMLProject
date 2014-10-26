@@ -9,7 +9,8 @@ output: html_document
 
 The goal of this project is to build the predictor, which can answer the question:
 What is the manner in which 6  participants are doing a particular activity ?.
-The data this project uses are from accelerometers on the belt, forearm, arm, and dumbell.Participants performed  barbell lifts correctly and incorrectly in 5 different ways.The full description of the "Human Activity Recognition" experiment is given here: http://groupware.les.inf.puc-rio.br/har
+The data this project uses are from accelerometers on the belt, forearm, arm, and dumbbell. Participants performed  barbell lifts correctly and incorrectly in 5 different ways. The full description of the "Human Activity Recognition" experiment is given here: http://groupware.les.inf.puc-rio.br/har
+
 
 ####Input Data:
 
@@ -26,6 +27,7 @@ As a result we have set of 52 features in both cleaned sets, plus "classe"" feat
 ```{r}
 library(caret)
 library(e1071)
+library("FSelector")
 
 # Read all training set
 url <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
@@ -85,8 +87,6 @@ Are these features correlated ?. To find it out we can use FSelector package.
 
 ```{r}
 # Features selection & dimension reduction
-#install.packages("FSelector")
-library("FSelector")
 result <- cfs(classe ~ ., trainingCV)
 #result <- cfs(classe ~ ., trainNew)
 f <- as.simple.formula(result, "classe")
@@ -107,7 +107,7 @@ For parameter estimation I used "train"" function from caret package with:
 
 ```{r}
 # Function for missclassification error estimation
-missClass = function(values,prediction){sum(prediction != values)/length(values)}
+missClassError = function(trueValues,predictedValues){sum(predictedValues != trueValues)/length(trueValues)}
 
 # General function for model training
 modelTrain <- function (m, f){
@@ -150,11 +150,11 @@ predictInValidatingCV <- predict(modFit, validatingCV)
 confusionMatrix(predictInValidatingCV, validatingCV$classe)
 
 # predict with validation set
-prediction <- predict(modFit, validatingCV)
+predictedValues <- predict(modFit, validatingCV)
 # real values
-values <- validatingCV$classe
+trueValues <- validatingCV$classe
 # missclassification error rate
-gbmMissClassError <- missClass(values,prediction)
+gbmMissClassError <- missClassError(trueValues, predictedValues)
 
 # predict with final test set
 gbmPredictFinalTest <- predict(modFit, testNew)
@@ -186,11 +186,11 @@ predictInValidatingCV <- predict(modFit, validatingCV)
 confusionMatrix(predictInValidatingCV, validatingCV$classe)
 
 # predict with validation set
-prediction <- predict(modFit, validatingCV)
+predictedValues <- predict(modFit, validatingCV)
 # real values
-values <- validatingCV$classe
+trueValues <- validatingCV$classe
 # missclassification error rate
-svmMissClassError <- missClass(values,prediction)
+svmMissClassError <- missClassError(trueValues, predictedValues)
 
 # predict with final test set
 svmPredictFinalTest <- predict(modFit, testNew)
@@ -222,11 +222,11 @@ predictInValidatingCV <- predict(modFit, validatingCV)
 confusionMatrix(predictInValidatingCV, validatingCV$classe)
 
 # predict with validation set
-prediction <- predict(modFit, validatingCV)
+predictedValues <- predict(modFit, validatingCV)
 # real values
-values <- validatingCV$classe
+trueValues <- validatingCV$classe
 # missclassification error rate
-rfMissClassError <- missClass(values,prediction)
+rfMissClassError <- missClassError(trueValues, predictedValues)
 
 # predict with final test set
 rfPredictFinalTest <- predict(modFit, testNew)
@@ -297,3 +297,45 @@ pml_write_files(answers)
 
 we write down each predicted case to seperate file, with "problem_id*" prefix.
 Also worth mentioning is that in case of using all 52 selected features instead of given by cfs package usage, we can expect even better accuracy.
+
+##### Random Forest using all 52 features.
+
+```{r}
+########## rf
+
+m = "rf"
+set.seed(1234)
+timeStart <- Sys.time()
+modFit <- modelTrain(m, trainingCV$classe ~.)
+timeEnd <- Sys.time()
+timeEnd-timeStart
+modFit
+modFit$finalModel
+
+# in training prediction and confusion matrix
+predictInTrainingCV <- predict(modFit, trainingCV)
+confusionMatrix(predictInTrainingCV, trainingCV$classe)
+
+# in testing prediction and confusion matrix
+predictInValidatingCV <- predict(modFit, validatingCV)
+confusionMatrix(predictInValidatingCV, validatingCV$classe)
+
+# predict with validation set
+predictedValues <- predict(modFit, validatingCV)
+# real values
+trueValues <- validatingCV$classe
+# missclassification error rate
+rfMissClassError <- missClassError(trueValues, predictedValues)
+
+# predict with final test set
+rfPredictFinalTest <- predict(modFit, testNew)
+rfPredictFinalTest
+
+##########
+```
+
+####Expected out-of-sample error
+
+For random forests model with all 52 selected features we get slightly better accuracy 99,42% and coresponding unbiased estimation for out-of-sample error amounts to  0,578%.
+Final prediction for 20 different test cases is unchanged.
+

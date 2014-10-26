@@ -67,9 +67,9 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 <p>The training data comes from this source: <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv</a>.</p>
 <p>The test data comes from this source: <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv</a>.</p>
 </div>
-<div id="features" class="section level4">
-<h4>Features</h4>
-<p>After downloading and reading the training and test set I noticed, that there are 160 variables in both sets. There is a column “new window” with “yes” or “no” values. For “yes” value in row - statistical properties of some feature are given, but as we can see, the values are missed up. If I understand we don’t need to mimmic original method applyied in author’s paper - using rooling window, to calculate this statistical features (skewness, kurtosis, variance, etc.). Instead we must clean the data, because of lot of “NA” and “#DIV/0!” values and use almost the rest of columns. I suggest to remove first 8 columns. As a result we have set of 52 features in both cleaned sets, plus “classe”&quot; feature as outcome in training set.</p>
+<div id="cleaning" class="section level4">
+<h4>Cleaning</h4>
+<p>After downloading and reading the training and test set I noticed, that there are 160 variables in both sets. There is a column “new window” with “yes” or “no” values. For “yes” value in row - statistical properties of some features are given, but as we can see, the values are missed up. If I understand we don’t need to mimic original method applied in author’s paper - using rooling window, to calculate statistical features (skewness, kurtosis, variance, etc.). Instead we must clean the data, because of lot of “NA” , “#DIV/0!” and empty values and use almost the rest of columns. I suggest to remove first 8 columns, which don’t belong to predictive variables. As a result we have set of 52 features in both cleaned sets, plus “classe”&quot; feature as outcome in training set.</p>
 <pre class="r"><code>library(caret)</code></pre>
 <pre><code>## Loading required package: lattice
 ## Loading required package: ggplot2</code></pre>
@@ -105,14 +105,22 @@ testNew &lt;- test[,(colnamesTest %in% commonNames)]
 # add column &quot;classe&quot; to new training set
 trainingNew[&quot;classe&quot;] &lt;- NA
 trainingNew$classe &lt;- trainingDS$classe</code></pre>
-<p>I devided cleaned training set into 2 parts as follows: It was done for estimation of out-of-sample error for each model.</p>
+<p>Removed columns are:</p>
+<pre class="r"><code>  colnames(testingDSwithoutNA[(1:7)])</code></pre>
+<pre><code>## [1] &quot;X&quot;                    &quot;user_name&quot;            &quot;raw_timestamp_part_1&quot;
+## [4] &quot;raw_timestamp_part_2&quot; &quot;cvtd_timestamp&quot;       &quot;new_window&quot;          
+## [7] &quot;num_window&quot;</code></pre>
+<p>I divided cleared training set into 2 parts as follows: It was done for estimation of out-of-sample error for each model.</p>
 <pre class="r"><code># For Cross Validation
 set.seed(1234)
 inTrain &lt;- createDataPartition(y = trainingNew$classe, p = 0.7, list = F)
 trainingCV &lt;- trainingNew[inTrain,]
 # validation test
 validatingCV &lt;- trainingNew[-inTrain,]</code></pre>
-<p>Are these features correlated. To find it we can use….</p>
+</div>
+<div id="features" class="section level4">
+<h4>Features</h4>
+<p>Do we need all set of features ? Are these features correlated ?. To find it out we can use FSelector package.</p>
 <pre class="r"><code># Features selection &amp; dimension reduction
 #install.packages(&quot;FSelector&quot;)
 library(&quot;FSelector&quot;)
@@ -122,7 +130,7 @@ f &lt;- as.simple.formula(result, &quot;classe&quot;)
 print(f)</code></pre>
 <pre><code>## classe ~ roll_belt + pitch_belt + yaw_belt + magnet_arm_x + gyros_dumbbell_y + 
 ##     magnet_dumbbell_y + pitch_forearm
-## &lt;environment: 0x000000000dbeff68&gt;</code></pre>
+## &lt;environment: 0x000000000dbefc80&gt;</code></pre>
 </div>
 <div id="algorithm" class="section level4">
 <h4>Algorithm</h4>
@@ -130,7 +138,7 @@ print(f)</code></pre>
 </div>
 <div id="parameters-of-the-model" class="section level4">
 <h4>Parameters of the model</h4>
-<p>For parameter estimation I used train function from caret package with: 10-fold cross validation and other default values.</p>
+<p>For parameter estimation I used “train”&quot; function from caret package with: 10-fold cross validation and other default values.</p>
 <pre class="r"><code># Function for missclassification error estimation
 missClass = function(values,prediction){sum(prediction != values)/length(values)}
 
@@ -149,7 +157,7 @@ modelTrain &lt;- function (m, f){
 </div>
 <div id="evaluation" class="section level4">
 <h4>Evaluation</h4>
-<p>All 3 models were tunned and evaluated using following code.Method (m value) was choosen to process current model (“svm”, “gbm” and “rf”)</p>
+<p>All 3 models were tuned in and evaluated using following code. Method (m value) was choosen to process current model (“svm”, “gbm” and “rf”).</p>
 <div id="generalized-boosted-regression-models" class="section level5">
 <h5>Generalized Boosted Regression Models</h5>
 <pre class="r"><code>########## gbm
@@ -792,7 +800,7 @@ modFit &lt;- modelTrain(m,f)</code></pre>
 ##    150        0.3441             nan     0.1000    0.0010</code></pre>
 <pre class="r"><code>timeEnd &lt;- Sys.time()
 timeEnd-timeStart</code></pre>
-<pre><code>## Time difference of 2.754658 mins</code></pre>
+<pre><code>## Time difference of 2.758694 mins</code></pre>
 <pre class="r"><code>modFit</code></pre>
 <pre><code>## Stochastic Gradient Boosting 
 ## 
@@ -918,7 +926,7 @@ timeStart &lt;- Sys.time()
 modFit &lt;- modelTrain(m,f)
 timeEnd &lt;- Sys.time()
 timeEnd-timeStart</code></pre>
-<pre><code>## Time difference of 28.82062 secs</code></pre>
+<pre><code>## Time difference of 28.99621 secs</code></pre>
 <pre class="r"><code>modFit</code></pre>
 <pre><code>## 
 ## Call:
@@ -1031,7 +1039,7 @@ modFit &lt;- modelTrain(m,f)</code></pre>
 ## Type rfNews() to see new features/changes/bug fixes.</code></pre>
 <pre class="r"><code>timeEnd &lt;- Sys.time()
 timeEnd-timeStart</code></pre>
-<pre><code>## Time difference of 3.811402 mins</code></pre>
+<pre><code>## Time difference of 3.864686 mins</code></pre>
 <pre class="r"><code>modFit</code></pre>
 <pre><code>## Random Forest 
 ## 
@@ -1178,7 +1186,7 @@ rfPredictFinalTest</code></pre>
 <pre class="r"><code>rfPredictFinalTest</code></pre>
 <pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
 ## Levels: A B C D E</code></pre>
-<p>Model built with random forests is very accurate. In-sample accuraccy is equal 1.0, so we could expect overfitting, but accuracy for Ou-of-sample case is equal “only” 98,49%</p>
+<p>Model built with random forests is very accurate and it was eventually selected as predicting algorithm. In-sample accuracy is equal 1.0, so we could expect overfitting, but accuracy for Out-of-sample case is equal “only” 98,49%</p>
 <p>Applying RF model with the code:</p>
 <pre class="r"><code>pml_write_files = function(x){
   n = length(x)
@@ -1188,8 +1196,10 @@ rfPredictFinalTest</code></pre>
   }
 }
 
-pml_write_files(rfPredictFinalTest)</code></pre>
-<p>we write each predicted case to seperate file, with “problem_id*&quot; prefix. Also worth mentioning is that in case as using all 52 selected features instead of given by csf package usage, we can expect even better accuracy.</p>
+answers &lt;- as.character(rfPredictFinalTest)
+
+pml_write_files(answers)</code></pre>
+<p>we write down each predicted case to seperate file, with “problem_id*&quot; prefix. Also worth mentioning is that in case of using all 52 selected features instead of given by cfs package usage, we can expect even better accuracy.</p>
 </div>
 
 

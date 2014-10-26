@@ -25,47 +25,51 @@ As a result we have set of 52 features in both cleaned sets, plus "classe"" feat
 
 ```{r}
 library(caret)
-set.seed(1234)
+library(e1071)
 
 # Read all training set
-training <- read.csv(file="C:/Users/Pawel/Downloads/pml-training.csv", header=TRUE, sep=",")
-# Select rows with new_window=="yes"
-trainingYES <- training #[(training$new_window=="yes"),]
-# remove all columns with NA or "#DIV/0!"
-trainingYESwithoutNA <- trainingYES[ , apply(trainingYES, 2, function(x) !any(x=="" || x=="#DIV/0!" || is.na(x)))]
+url <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+download.file(url, "pml-training.csv")
+trainingDS <- read.csv(file="pml-training.csv", header=TRUE, sep=",")
+# remove all columns with NA or "#DIV/0!" 
+trainingDSwithoutNA <- trainingDS[ , apply(trainingDS, 2, function(x) !any(x=="" || x=="#DIV/0!" || is.na(x)))]
 # remove unnecessary columns
-train <- trainingYESwithoutNA[-(0:7)]
+training <- trainingDSwithoutNA[-(1:7)]
 
 # Read all test set
-testing <- read.csv(file="C:/Users/Pawel/Downloads/pml-testing.csv", header=TRUE, sep=",")
-# remove all columns with NA or "#DIV/0!"
-testingYESwithoutNA <- testing[ , apply(testing, 2, function(x) !any(x=="" || x=="#DIV/0!" || is.na(x)))]
+url <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+download.file(url, "pml-testing.csv")
+testingDS <- read.csv(file="pml-testing.csv", header=TRUE, sep=",")
+# remove all columns with NA or "#DIV/0!" or empty
+testingDSwithoutNA <- testingDS[ , apply(testingDS, 2, function(x) !any(x=="" || x=="#DIV/0!" || is.na(x)))]
 # remove unnecessary columns
-test <- testingYESwithoutNA[-(0:7)]
+test <- testingDSwithoutNA[-(1:7)]
 
 # Find columns names for both tests
-colnamesTrain <- colnames(train)
+colnamesTrain <- colnames(training)
 colnamesTest <- colnames(test)
 # find the matching names
-commonNames <- matchingNames <- names(train)[names(train) %in% names(test)]
+commonNames <- matchingNames <- names(training)[names(training) %in% names(test)]
 # select only common names in training set
-trainNew <- train[,(colnamesTrain %in% commonNames)]
+trainingNew <- training[,(colnamesTrain %in% commonNames)]
 # select only common names in test set
 testNew <- test[,(colnamesTest %in% commonNames)]
+# add column "classe" to new training set
+trainingNew["classe"] <- NA
+trainingNew$classe <- trainingDS$classe
 
-# add column "classe
-trainNew["classe"] <- NA
-trainNew$classe <- train$classe
-# set the name of last column
-#colnames(trainNew)[dim(trainNew)[2]] <- "classe"
+```
 
+I devided cleaned training set into 2 parts as follows:
+It was done for estimation of out-of-sample error for each model.
+
+```{r}
 # For Cross Validation
 set.seed(1234)
-inTrain <- createDataPartition(y = trainNew$classe, p = 0.8, list = F)
-trainingCV <- trainNew[inTrain,]
+inTrain <- createDataPartition(y = trainingNew$classe, p = 0.7, list = F)
+trainingCV <- trainingNew[inTrain,]
 # validation test
-validatingCV <- trainNew[-inTrain,]
-
+validatingCV <- trainingNew[-inTrain,]
 ```
 
 Are these features correlated. To find it we can use....
@@ -83,17 +87,199 @@ print(f)
 ####Algorithm
 
 I decided to use following 3 algorithms for comparison:
-Random Forest
-Generalized Boosted Regression Models
-and
-Support Vector Machines
+1)  Support Vector Machines
+2)  Generalized Boosted Regression Models
+3)  Random Forest
 
-####Parameter
+####Parameters of the model
 
+For parameter estimation I used train function from caret package with:
+10-fold cross validation and other default values.
 
+```{r}
+# Function for missclassification error estimation
+missClass = function(values,prediction){sum(prediction != values)/length(values)}
+
+# General function for model training
+modelTrain <- function (m, f){
+  if (m != "svm")
+  {
+    train(form=f, data=trainingCV, method=m, trControl=trainControl(method="cv",number=10)) 
+  }
+  else
+  {
+    svm(form=f, data=trainingCV, method=m, trControl=trainControl(method="cv",number=10))  
+  }   
+}
+#
+```
+ 
 ####Evaluation
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+All 3 models were tunned and evaluated using following code.Method (m value) was choosen to process current model ("svm", "gbm" and "rf")
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+##### Generalized Boosted Regression Models
 
+```{r}
+########## gbm
+
+m = "gbm"
+set.seed(1234)
+timeStart <- Sys.time()
+modFit <- modelTrain(m,f)
+timeEnd <- Sys.time()
+timeEnd-timeStart
+modFit
+modFit$finalModel
+
+# in training prediction and confusion matrix
+predictInTrainingCV <- predict(modFit, trainingCV)
+confusionMatrix(predictInTrainingCV, trainingCV$classe)
+
+# in testing prediction and confusion matrix
+predictInValidatingCV <- predict(modFit, validatingCV)
+confusionMatrix(predictInValidatingCV, validatingCV$classe)
+
+# predict with validation set
+prediction <- predict(modFit, validatingCV)
+# real values
+values <- validatingCV$classe
+# missclassification error rate
+gbmMissClassError <- missClass(values,prediction)
+
+# predict with final test set
+gbmPredictFinalTest <- predict(modFit, testNew)
+gbmPredictFinalTest
+
+##########
+```
+
+##### Support Vector Machines
+
+```{r}
+########## svm
+
+m = "svm"
+set.seed(1234)
+timeStart <- Sys.time()
+modFit <- modelTrain(m,f)
+timeEnd <- Sys.time()
+timeEnd-timeStart
+modFit
+modFit$finalModel
+
+# in training prediction and confusion matrix
+predictInTrainingCV <- predict(modFit, trainingCV)
+confusionMatrix(predictInTrainingCV, trainingCV$classe)
+
+# in testing prediction and confusion matrix
+predictInValidatingCV <- predict(modFit, validatingCV)
+confusionMatrix(predictInValidatingCV, validatingCV$classe)
+
+# predict with validation set
+prediction <- predict(modFit, validatingCV)
+# real values
+values <- validatingCV$classe
+# missclassification error rate
+svmMissClassError <- missClass(values,prediction)
+
+# predict with final test set
+svmPredictFinalTest <- predict(modFit, testNew)
+svmPredictFinalTest
+
+##########
+```
+
+##### Random Forest
+
+```{r}
+########## rf
+
+m = "rf"
+set.seed(1234)
+timeStart <- Sys.time()
+modFit <- modelTrain(m,f)
+timeEnd <- Sys.time()
+timeEnd-timeStart
+modFit
+modFit$finalModel
+
+# in training prediction and confusion matrix
+predictInTrainingCV <- predict(modFit, trainingCV)
+confusionMatrix(predictInTrainingCV, trainingCV$classe)
+
+# in testing prediction and confusion matrix
+predictInValidatingCV <- predict(modFit, validatingCV)
+confusionMatrix(predictInValidatingCV, validatingCV$classe)
+
+# predict with validation set
+prediction <- predict(modFit, validatingCV)
+# real values
+values <- validatingCV$classe
+# missclassification error rate
+rfMissClassError <- missClass(values,prediction)
+
+# predict with final test set
+rfPredictFinalTest <- predict(modFit, testNew)
+rfPredictFinalTest
+
+##########
+```
+
+####Rsults
+
+As we can see, we get following estimation of out-of-sample error for 3 models:
+
+for GBM
+
+```{r}
+gbmMissClassError
+```
+
+for SVM
+
+```{r}
+svmMissClassError
+```
+
+for RF
+
+```{r}
+rfMissClassError
+```
+
+and following predictions for 20-cases final test
+
+for GBM
+
+```{r}
+gbmPredictFinalTest
+```
+
+for SVM
+
+```{r}
+svmPredictFinalTest
+```
+
+for RF
+
+```{r}
+rfPredictFinalTest
+```
+
+Model built with random forests is very accurate. In-sample accuraccy is equal 1.0, so we could expect overfitting, but accuracy for Ou-of-sample case is equal "only" 0.9849. 
+
+Applying RF model with the code:
+
+```{r}
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+
+pml_write_files(rfPredictFinalTest)
+```

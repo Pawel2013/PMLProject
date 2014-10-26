@@ -60,7 +60,7 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 
 <div id="question" class="section level4">
 <h4>Question:</h4>
-<p>The goal of this project is to build the predictor, which can answer the question: What is the manner in which 6 participants are doing a particular activity ?. The data this project uses are from accelerometers on the belt, forearm, arm, and dumbell.Participants performed barbell lifts correctly and incorrectly in 5 different ways.The full description of the “Human Activity Recognition” experiment is given here: <a href="http://groupware.les.inf.puc-rio.br/har">http://groupware.les.inf.puc-rio.br/har</a></p>
+<p>The goal of this project is to build the predictor, which can answer the question: What is the manner in which 6 participants are doing a particular activity ?. The data this project uses are from accelerometers on the belt, forearm, arm, and dumbbell. Participants performed barbell lifts correctly and incorrectly in 5 different ways. The full description of the “Human Activity Recognition” experiment is given here: <a href="http://groupware.les.inf.puc-rio.br/har">http://groupware.les.inf.puc-rio.br/har</a></p>
 </div>
 <div id="input-data" class="section level4">
 <h4>Input Data:</h4>
@@ -69,11 +69,12 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 </div>
 <div id="cleaning" class="section level4">
 <h4>Cleaning</h4>
-<p>After downloading and reading the training and test set I noticed, that there are 160 variables in both sets. There is a column “new window” with “yes” or “no” values. For “yes” value in row - statistical properties of some features are given, but as we can see, the values are missed up. If I understand we don’t need to mimic original method applied in author’s paper - using rooling window, to calculate statistical features (skewness, kurtosis, variance, etc.). Instead we must clean the data, because of lot of “NA” , “#DIV/0!” and empty values and use almost the rest of columns. I suggest to remove first 8 columns, which don’t belong to predictive variables. As a result we have set of 52 features in both cleaned sets, plus “classe”&quot; feature as outcome in training set.</p>
+<p>After downloading and reading the training and test set I noticed, that there are 160 variables in both sets. There is a column “new window” with “yes” or “no” values. For “yes” value in row - statistical properties of some features are given, but as we can see, the values are missed up. If I understand we don’t need to mimic original method applied in author’s paper - using rolling window, to calculate statistical features (skewness, kurtosis, variance, etc.). Instead we must clean the data, because of lot of “NA” , “#DIV/0!” and empty values and use almost the rest of columns. I suggest to remove first 8 columns, which don’t belong to predictive variables. As a result we have set of 52 features in both cleaned sets, plus “classe”&quot; feature as outcome in training set.</p>
 <pre class="r"><code>library(caret)</code></pre>
 <pre><code>## Loading required package: lattice
 ## Loading required package: ggplot2</code></pre>
 <pre class="r"><code>library(e1071)
+library(FSelector)
 
 # Read all training set
 url &lt;- &quot;http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv&quot;
@@ -122,15 +123,13 @@ validatingCV &lt;- trainingNew[-inTrain,]</code></pre>
 <h4>Features</h4>
 <p>Do we need all set of features ? Are these features correlated ?. To find it out we can use FSelector package.</p>
 <pre class="r"><code># Features selection &amp; dimension reduction
-#install.packages(&quot;FSelector&quot;)
-library(&quot;FSelector&quot;)
 result &lt;- cfs(classe ~ ., trainingCV)
 #result &lt;- cfs(classe ~ ., trainNew)
 f &lt;- as.simple.formula(result, &quot;classe&quot;)
 print(f)</code></pre>
 <pre><code>## classe ~ roll_belt + pitch_belt + yaw_belt + magnet_arm_x + gyros_dumbbell_y + 
 ##     magnet_dumbbell_y + pitch_forearm
-## &lt;environment: 0x0000000051956590&gt;</code></pre>
+## &lt;environment: 0x000000000cbe8f50&gt;</code></pre>
 </div>
 <div id="algorithm" class="section level4">
 <h4>Algorithm</h4>
@@ -800,7 +799,7 @@ modFit &lt;- modelTrain(m,f)</code></pre>
 ##    150        0.3441             nan     0.1000    0.0010</code></pre>
 <pre class="r"><code>timeEnd &lt;- Sys.time()
 timeEnd-timeStart</code></pre>
-<pre><code>## Time difference of 2.800204 mins</code></pre>
+<pre><code>## Time difference of 2.72645 mins</code></pre>
 <pre class="r"><code>modFit</code></pre>
 <pre><code>## Stochastic Gradient Boosting 
 ## 
@@ -926,7 +925,7 @@ timeStart &lt;- Sys.time()
 modFit &lt;- modelTrain(m,f)
 timeEnd &lt;- Sys.time()
 timeEnd-timeStart</code></pre>
-<pre><code>## Time difference of 30.93407 secs</code></pre>
+<pre><code>## Time difference of 29.44596 secs</code></pre>
 <pre class="r"><code>modFit</code></pre>
 <pre><code>## 
 ## Call:
@@ -1039,7 +1038,7 @@ modFit &lt;- modelTrain(m,f)</code></pre>
 ## Type rfNews() to see new features/changes/bug fixes.</code></pre>
 <pre class="r"><code>timeEnd &lt;- Sys.time()
 timeEnd-timeStart</code></pre>
-<pre><code>## Time difference of 3.977883 mins</code></pre>
+<pre><code>## Time difference of 3.76169 mins</code></pre>
 <pre class="r"><code>modFit</code></pre>
 <pre><code>## Random Forest 
 ## 
@@ -1210,7 +1209,7 @@ timeStart &lt;- Sys.time()
 modFit &lt;- modelTrain(m, trainingCV$classe ~.)
 timeEnd &lt;- Sys.time()
 timeEnd-timeStart</code></pre>
-<pre><code>## Time difference of 24.05288 mins</code></pre>
+<pre><code>## Time difference of 24.26336 mins</code></pre>
 <pre class="r"><code>modFit</code></pre>
 <pre><code>## Random Forest 
 ## 
@@ -1333,7 +1332,7 @@ rfPredictFinalTest</code></pre>
 </div>
 <div id="expected-out-of-sample-error" class="section level4">
 <h4>Expected out-of-sample error</h4>
-<p>For random forests model with all 52 selected features we get slightly better accuracy 99,42% and coresponding unbiased estimation for out-of-sample error amounts to 0,578%. Final prediction for 20 different test cases is unchanged.</p>
+<p>For random forests model with all 52 selected features we get slightly better accuracy 99,42% and corresponding unbiased estimation for out-of-sample error amounts to 0,578%. Final prediction for 20 different test cases is unchanged.</p>
 </div>
 
 

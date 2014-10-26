@@ -281,7 +281,9 @@ pml_write_files = function(x){
   }
 }
 
-pml_write_files(rfPredictFinalTest)
+answers <- as.character(rfPredictFinalTest)
+
+pml_write_files(answers)
 ```
 
 we write each predicted case to seperate file, with "problem_id*" prefix.

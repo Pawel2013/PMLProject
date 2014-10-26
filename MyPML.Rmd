@@ -26,6 +26,7 @@ As a result we have set of 52 features in both cleaned sets, plus "classe"" feat
 ```{r}
 library(caret)
 library(e1071)
+library("FSelector")
 
 # Read all training set
 url <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
@@ -85,8 +86,6 @@ Are these features correlated ?. To find it out we can use FSelector package.
 
 ```{r}
 # Features selection & dimension reduction
-#install.packages("FSelector")
-library("FSelector")
 result <- cfs(classe ~ ., trainingCV)
 #result <- cfs(classe ~ ., trainNew)
 f <- as.simple.formula(result, "classe")
